@@ -4,7 +4,7 @@ NAME="bdbusy"
 CODENAME="bdbusy"
 COPYRIGHT="Copyright (C) 2012 Nathan Shearer"
 LICENSE="GNU General Public License 2.0"
-VERSION="0.0.0.0"
+VERSION="1.0.0.0"
 
 # \brief Ensures dependencies are present
 # \param $@ The dependencies to check for
@@ -29,16 +29,22 @@ function bdbusy_help
 	echo "  $CODENAME [options] BLOCK_DEVICE"
 	echo
 	echo "Options:"
+	echo "  --blocks N"
+	echo "    Read N blocks per round. Default 256 blocks."
+	echo "  --blocksize N"
+	echo "    Set the block size to N bytes. Default 4096 bytes."
+	echo "  --delay N"
+	echo "    Set the delay between reads to N seconds. Default 5 seconds."
 	echo "  -h, --help"
 	echo "    Display this help message and exit."
 	echo "  -n N"
 	echo "    Sets the niceness to N (default 0)."
 	echo "  -v"
-	echo "    Show each disk read. The same as --verbose 1."
+	echo "    Show each read round. The same as --verbose 1."
 	echo "  --verbose #"
 	echo "    Use more or less verbose output. Valid values are from 0 to 1 inclusive:"
 	echo "      0  Default. No output"
-	echo "      1  Show each disk read"
+	echo "      1  Show each read round"
 	echo
 	echo "Examples:"
 	echo "  $CODENAME /dev/disk/by-id/ata-ST8000AS0002-1NA17Z_00000000"
@@ -57,7 +63,7 @@ function bdbusy_help
 BLOCKS="256" #1MB
 BLOCKSIZE="4096"
 NICE=0
-PERIOD="5s"
+DELAY="5"
 VERBOSE=0
 
 #------------------------------------------------------------------------------
@@ -82,6 +88,18 @@ fi
 THIS="$0"
 while [ $# -ne 0 ]; do
 	case "$1" in
+		"--blocks")
+			BLOCKS="$2"
+			shift 2
+			;;
+		"--blocksize")
+			BLOCKSIZE="$2"
+			shift 2
+			;;
+		"--delay")
+			DELAY="$2"
+			shift 2
+			;;
 		"-h"|"--help")
 			bdbusy_help
 			exit
@@ -140,5 +158,5 @@ while true; do
 	if [ "$VERBOSE" -ge 1 ]; then
 		echo " done."
 	fi
-	sleep $PERIOD
+	sleep $DELAY
 done
