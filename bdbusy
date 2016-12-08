@@ -31,6 +31,8 @@ function bdbusy_help
 	echo "Options:"
 	echo "  -h, --help"
 	echo "    Display this help message and exit."
+	echo "  -n N"
+	echo "    Sets the niceness to N (default 0)."
 	echo "  -v"
 	echo "    Show each disk read. The same as --verbose 1."
 	echo "  --verbose #"
@@ -54,6 +56,7 @@ function bdbusy_help
 #
 BLOCKS="256" #1MB
 BLOCKSIZE="4096"
+NICE=0
 PERIOD="5s"
 VERBOSE=0
 
@@ -83,6 +86,10 @@ while [ $# -ne 0 ]; do
 			bdbusy_help
 			exit
 			;;
+		"-n")
+			NICE="$2"
+			shift 2
+			;;
 		"-v")
 			VERBOSE=1
 			shift
@@ -109,7 +116,8 @@ DEVICE="$1"
 #------------------------------------------------------------------------------
 # prepare environment
 
-bdbusy_check_dependencies blockdev dd sleep
+bdbusy_check_dependencies blockdev dd ionice sleep
+renice $NICE $$ >/dev/null
 
 #------------------------------------------------------------------------------
 # begin execution
@@ -128,7 +136,7 @@ while true; do
 	if [ "$VERBOSE" -ge 1 ]; then
 		echo -n "Reading $BLOCKS blocks from ‘$DEVICE’ at block $START..."
 	fi
-	dd if="$DEVICE" bs="$BLOCKSIZE" skip=$START count="$BLOCKS" of=/dev/null 2>/dev/null
+	ionice -c 3 dd if="$DEVICE" bs="$BLOCKSIZE" skip=$START count="$BLOCKS" of=/dev/null 2>/dev/null
 	if [ "$VERBOSE" -ge 1 ]; then
 		echo " done."
 	fi
