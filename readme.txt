@@ -27,6 +27,6 @@ Examples:
   bdbusy -v /dev/disk/by-id/ata-ST8000AS0002-1NA17Z_00000000
 
 Version:
-  bdbusy 1.0.0.0
+  bdbusy 1.1.0.0
   Copyright (C) 2012 Nathan Shearer
   Licensed under GNU General Public License 2.0
