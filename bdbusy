@@ -1,0 +1,63 @@
+#!/bin/bash
+
+#----------------------------------------------------------------------------
+# BDBusy
+# Copyright (C) 2012 Nathan Shearer
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 as published by
+# the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to:
+#   The Free Software Foundation Inc.
+#   51 Franklin Street
+#   Fifth Floor
+#   Boston, MA
+#   02110-1301
+#   USA
+
+COPYRIGHT="Copyright (C) 2012 Nathan Shearer"
+VERSION="0.0.0.0"
+
+# \brief Ensures dependencies are present
+# \param $@ The dependencies to check for
+function shearer_check_dependencies
+{
+	for TOOL in "$@"; do
+		if ! type "$TOOL" >/dev/null 2>/dev/null; then
+			echo "$0: \"$TOOL\" is required for this application to work correctly." >&2
+			exit
+		fi
+	done
+}
+
+shearer_check_dependencies blockdev dd sleep
+
+PERIOD="5s"
+BLOCKSIZE="4096"
+BLOCKS="256" #1MB
+
+DEVICE="$1"
+
+DEVICE_BYTES=`blockdev --getsize64 $DEVICE`
+DEVICE_BLOCKS=$(( $DEVICE_BYTES / $BLOCKSIZE ))
+
+if [ $BLOCKS -gt $DEVICE_BLOCKS ]; then
+	echo "Error: You are attempting to read $BLOCKS blocks from a device which only contains $DEVICE_BLOCKS blocks."
+	exit 1
+fi
+
+while true; do
+	RANDOM64=$(( $RANDOM * $RANDOM * $RANDOM * $RANDOM ))
+	START=$(( $RANDOM64 % ( $DEVICE_BLOCKS - $BLOCKS ) ))
+	printf "Reading $BLOCKS blocks from '$DEVICE' starting at block $START... "
+	dd if="$DEVICE" bs="$BLOCKSIZE" skip=$START count="$BLOCKS" of=/dev/null 2>/dev/null
+	echo "Done."
+	sleep $PERIOD
+done
