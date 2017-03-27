@@ -11,6 +11,8 @@ Options:
     Set the block size to N bytes. Default 4096 bytes.
   --delay N
     Set the delay between reads to N seconds. Default 5 seconds.
+  --email mail@example.com
+    Set the e-mail address where failure notifications should be sent.
   -h, --help
     Display this help message and exit.
   -n N
@@ -27,6 +29,6 @@ Examples:
   bdbusy -v /dev/disk/by-id/ata-ST8000AS0002-1NA17Z_00000000
 
 Version:
-  bdbusy 1.2.0.0
+  bdbusy 1.2.1.0
   Copyright (C) 2012 Nathan Shearer
   Licensed under GNU General Public License 2.0

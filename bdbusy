@@ -4,7 +4,7 @@ NAME="bdbusy"
 CODENAME="bdbusy"
 COPYRIGHT="Copyright (C) 2012 Nathan Shearer"
 LICENSE="GNU General Public License 2.0"
-VERSION="1.2.0.0"
+VERSION="1.2.1.0"
 
 # \brief Ensures dependencies are present
 # \param $@ The dependencies to check for
@@ -35,6 +35,8 @@ function bdbusy_help
 	echo "    Set the block size to N bytes. Default 4096 bytes."
 	echo "  --delay N"
 	echo "    Set the delay between reads to N seconds. Default 5 seconds."
+	echo "  --email mail@example.com"
+	echo "    Set the e-mail address where failure notifications should be sent."
 	echo "  -h, --help"
 	echo "    Display this help message and exit."
 	echo "  -n N"
@@ -144,6 +146,10 @@ while [ $# -ne 0 ]; do
 			;;
 		"--delay")
 			DELAY="$2"
+			shift 2
+			;;
+		"--email")
+			EMAIL="$2"
 			shift 2
 			;;
 		"-h"|"--help")
