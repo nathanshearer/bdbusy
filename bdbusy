@@ -4,7 +4,7 @@ NAME="bdbusy"
 CODENAME="bdbusy"
 COPYRIGHT="Copyright (C) 2012 Nathan Shearer"
 LICENSE="GNU General Public License 2.0"
-VERSION="1.1.0.0"
+VERSION="1.2.0.0"
 
 # \brief Ensures dependencies are present
 # \param $@ The dependencies to check for
@@ -22,7 +22,7 @@ function bdbusy_check_dependencies
 function bdbusy_help
 {
 	#     01234567890123456789012345678901234567890123456789012345678901234567890123456789
-	echo "Synopsis:"
+	echo "Description:"
 	echo "  Periodically reads data from a block device keeping it busy"
 	echo
 	echo "Usage:"
@@ -57,11 +57,57 @@ function bdbusy_help
 	exit;
 }
 
+# \brief The main function of this script
+function bdbusy_main
+{
+	while true; do
+		local NOW=$(date --rfc-3339=seconds)
+		
+		if [ ! -e "$DEVICE" ]; then
+			echo "error: \"$DEVICE\" does not exist."
+			if [ "$EMAIL" != "" ]; then
+				echo "error: \"$DEVICE\" does not exist." | mail -s "$(hostname): bdbusy: error on $NOW" $EMAIL
+			fi
+			return 1
+		fi
+		if [ ! -b "$DEVICE" ]; then
+			echo "error: \"$DEVICE\" is not a block device."
+			if [ "$EMAIL" != "" ]; then
+				echo "error: \"$DEVICE\" is not a block device." | mail -s "$(hostname): bdbusy: error on $NOW" $EMAIL
+			fi
+			return 2
+		fi
+		
+		local DEVICE_BYTES=$(blockdev --getsize64 "$DEVICE")
+		local DEVICE_BLOCKS=$(( $DEVICE_BYTES / $BLOCKSIZE ))
+		
+		if [ $BLOCKS -gt $DEVICE_BLOCKS ]; then
+			echo "error: Attempting to read $BLOCKS blocks from a device which only contains $DEVICE_BLOCKS blocks."
+			if [ "$EMAIL" != "" ]; then
+				echo "error: Attempting to read $BLOCKS blocks from a device which only contains $DEVICE_BLOCKS blocks." | mail -s "$(hostname): bdbusy: error on $NOW" $EMAIL
+			fi
+			return 3
+		fi
+		
+		local RANDOM64=$(( $RANDOM * $RANDOM * $RANDOM * $RANDOM ))
+		local START=$(( $RANDOM64 % ( $DEVICE_BLOCKS - $BLOCKS ) ))
+		if [ "$VERBOSE" -ge 1 ]; then
+			echo -n "Reading $BLOCKS blocks from ‘$DEVICE’ at block $START..."
+		fi
+		ionice -c 3 dd if="$DEVICE" bs="$BLOCKSIZE" skip=$START count="$BLOCKS" of=/dev/null 2>/dev/null
+		if [ "$VERBOSE" -ge 1 ]; then
+			echo " done."
+		fi
+		sleep $DELAY
+	done
+}
+
 #------------------------------------------------------------------------------
 # default configuration
 #
 BLOCKS="256" #1MB
 BLOCKSIZE="4096"
+EMAIL=""
 NICE=0
 DELAY="5"
 VERBOSE=0
@@ -135,28 +181,12 @@ DEVICE="$1"
 # prepare environment
 
 bdbusy_check_dependencies blockdev dd ionice sleep
+if [ "$EMAIL" != "" ]; then
+	bdbusy_check_dependencies mail
+fi
 renice $NICE $$ >/dev/null
 
 #------------------------------------------------------------------------------
 # begin execution
 
-DEVICE_BYTES=$(blockdev --getsize64 "$DEVICE")
-DEVICE_BLOCKS=$(( $DEVICE_BYTES / $BLOCKSIZE ))
-
-if [ $BLOCKS -gt $DEVICE_BLOCKS ]; then
-	echo "error: Attempting to read $BLOCKS blocks from a device which only contains $DEVICE_BLOCKS blocks."
-	exit 1
-fi
-
-while true; do
-	RANDOM64=$(( $RANDOM * $RANDOM * $RANDOM * $RANDOM ))
-	START=$(( $RANDOM64 % ( $DEVICE_BLOCKS - $BLOCKS ) ))
-	if [ "$VERBOSE" -ge 1 ]; then
-		echo -n "Reading $BLOCKS blocks from ‘$DEVICE’ at block $START..."
-	fi
-	ionice -c 3 dd if="$DEVICE" bs="$BLOCKSIZE" skip=$START count="$BLOCKS" of=/dev/null 2>/dev/null
-	if [ "$VERBOSE" -ge 1 ]; then
-		echo " done."
-	fi
-	sleep $DELAY
-done
+bdbusy_main
