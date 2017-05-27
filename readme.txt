@@ -1,5 +1,5 @@
 Description:
-  Periodically reads data from a block device keeping it busy
+  Periodically read from or write to a block device
 
 Usage:
   bdbusy [options] BLOCK_DEVICE
@@ -23,12 +23,14 @@ Options:
     Use more or less verbose output. Valid values are from 0 to 1 inclusive:
       0  Default. No output
       1  Show each read round
+  -w, --write
+    Write instead of read.
 
 Examples:
   bdbusy /dev/disk/by-id/ata-ST8000AS0002-1NA17Z_00000000
   bdbusy -v /dev/disk/by-id/ata-ST8000AS0002-1NA17Z_00000000
 
 Version:
-  bdbusy 1.2.1.0
+  bdbusy 1.3.0.0
   Copyright (C) 2012 Nathan Shearer
   Licensed under GNU General Public License 2.0

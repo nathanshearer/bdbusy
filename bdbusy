@@ -4,7 +4,7 @@ NAME="bdbusy"
 CODENAME="bdbusy"
 COPYRIGHT="Copyright (C) 2012 Nathan Shearer"
 LICENSE="GNU General Public License 2.0"
-VERSION="1.2.1.0"
+VERSION="1.3.0.0"
 
 # \brief Ensures dependencies are present
 # \param $@ The dependencies to check for
@@ -23,7 +23,7 @@ function bdbusy_help
 {
 	#     01234567890123456789012345678901234567890123456789012345678901234567890123456789
 	echo "Description:"
-	echo "  Periodically reads data from a block device keeping it busy"
+	echo "  Periodically read from or write to a block device"
 	echo
 	echo "Usage:"
 	echo "  $CODENAME [options] BLOCK_DEVICE"
@@ -47,6 +47,8 @@ function bdbusy_help
 	echo "    Use more or less verbose output. Valid values are from 0 to 1 inclusive:"
 	echo "      0  Default. No output"
 	echo "      1  Show each read round"
+	echo "  -w, --write"
+	echo "    Write instead of read."
 	echo
 	echo "Examples:"
 	echo "  $CODENAME /dev/disk/by-id/ata-ST8000AS0002-1NA17Z_00000000"
@@ -94,9 +96,24 @@ function bdbusy_main
 		local RANDOM64=$(( $RANDOM * $RANDOM * $RANDOM * $RANDOM ))
 		local START=$(( $RANDOM64 % ( $DEVICE_BLOCKS - $BLOCKS ) ))
 		if [ "$VERBOSE" -ge 1 ]; then
-			echo -n "Reading $BLOCKS blocks from ‘$DEVICE’ at block $START..."
+			if $WRITE; then
+				echo -n "Writing"
+			else
+				echo -n "Reading"
+			fi
+			echo -n " $BLOCKS blocks"
+			if $WRITE; then
+				echo -n " to"
+			else
+				echo -n " from"
+			fi
+			echo -n " ‘$DEVICE’ at block $START..."
 		fi
-		ionice -c 3 dd if="$DEVICE" bs="$BLOCKSIZE" skip=$START count="$BLOCKS" of=/dev/null 2>/dev/null
+		if $WRITE; then
+			ionice -c 3 dd status=none if=/dev/urandom bs="$BLOCKSIZE" count="$BLOCKS" of="$DEVICE" seek=$START
+		else
+			ionice -c 3 dd status=none if="$DEVICE" bs="$BLOCKSIZE" skip=$START count="$BLOCKS" of=/dev/null
+		fi
 		if [ "$VERBOSE" -ge 1 ]; then
 			echo " done."
 		fi
@@ -113,6 +130,7 @@ EMAIL=""
 NICE=0
 DELAY="5"
 VERBOSE=0
+WRITE=false
 
 #------------------------------------------------------------------------------
 # config files
@@ -167,6 +185,10 @@ while [ $# -ne 0 ]; do
 		"--verbose")
 			VERBOSE="$2"
 			shift 2
+			;;
+		"-w"|"--write")
+			WRITE=true
+			shift
 			;;
 		*)
 			break;;
